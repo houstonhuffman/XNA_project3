@@ -1,5 +1,10 @@
-[Dd]ebug/
-[Rr]elease/
-[Bb]in/
 *.csproj
 *bin/
+Properties/
+*.cachefile
+*.user
+*.sln
+*.suo
+*.ico
+*.contentproj
+obj/
