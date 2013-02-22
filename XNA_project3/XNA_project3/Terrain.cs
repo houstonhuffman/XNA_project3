@@ -31,7 +31,6 @@ using Microsoft.Xna.Framework.Media;
 
 namespace XNA_project3
 {
-
     /// <summary>
     /// Terrain represents a ground.
     /// The vertices have position and color.  Terrain width = height.  
