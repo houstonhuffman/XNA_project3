@@ -47,9 +47,9 @@ namespace XNA_project3
         private int rotate;
         private float angle;
         private Matrix initialOrientation;
+        private Vector3 velocity;
 
-        public Player(Stage theStage, string label, Vector3 pos, Vector3 orientAxis, float radians, string meshFile)
-            : base(theStage, label, pos, orientAxis, radians, meshFile)
+        public Player(Stage theStage, string label, Vector3 pos, Vector3 orientAxis, float radians, string meshFile) : base(theStage, label, pos, orientAxis, radians, meshFile)
         {  // change names for on-screen display of current camera
             first.Name = "First";
             follow.Name = "Follow";
@@ -57,6 +57,7 @@ namespace XNA_project3
             IsCollidable = true;  // Player test collisions
             rotate = 0;
             angle = 0.01f;
+            velocity = Vector3.Zero;
             initialOrientation = agentObject.Orientation;
         }
 
@@ -83,6 +84,11 @@ namespace XNA_project3
                 else if (gamePadState.Buttons.RightShoulder == ButtonState.Pressed && oldGamePadState.Buttons.RightShoulder != ButtonState.Pressed)
                     stage.FixedStepRendering = !stage.FixedStepRendering;
 
+                //Use thumbsticks for moving the player
+                //Left thumbstick for forward backward, right thumbstick for rotation
+                agentObject.Step += (int)(gamePadState.ThumbSticks.Left.Y * 10);
+                rotate += (int)(gamePadState.ThumbSticks.Right.X * -10);
+                
                 // allow more than one gamePadState to be pressed
                 if (gamePadState.DPad.Up == ButtonState.Pressed)
                     agentObject.Step++;

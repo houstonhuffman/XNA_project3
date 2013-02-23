@@ -184,42 +184,6 @@ namespace XNA_project3
                 height += (triZ2 - triZ3) * (1.0f - sqX);
             }
 
-            //Plane surface;
-
-            //int xPlusOne = xPos + 1;
-            //int zPlusOne = zPos + 1;
-
-            //float triZ0 = (this.terrainHeight[xPos, zPos]);
-            //float triZ1 = (this.terrainHeight[xPlusOne, zPos]);
-            //float triZ2 = (this.terrainHeight[xPos, zPlusOne]);
-            //float triZ3 = (this.terrainHeight[xPlusOne, zPlusOne]);
-
-            //Vector3 v0 = new Vector3(xPos, triZ0, zPos);
-            //Vector3 v1 = new Vector3(xPlusOne, triZ1, zPos);
-            //Vector3 v2 = new Vector3(xPos, triZ2, zPlusOne);
-            //Vector3 v3 = new Vector3(xPlusOne, triZ3, zPlusOne);
-
-            //float sqX = (x / spacing) - xPos;
-            //float sqZ = (z / spacing) - zPos;
-
-            //if ((sqX + sqZ) > 1)
-            //{
-            //    surface = new Plane(v2, v1, v3);
-            //}
-            //else
-            //{
-            //    surface = new Plane(v0, v1, v2);
-            //}
-
-            //Vector3 normal = surface.Normal;
-
-            //float dx = x /150- v0.X ;
-            //float dz = z /150- v0.Z;
-
-            //height = v2.Y + (normal.X * dx + normal.Z * dz) / -normal.Y;
-            //height = (normal.X + normal.Y + normal.Z - normal.X * x - normal.Z * z) / normal.Y;
-
-
             return height;
         }
 
@@ -233,7 +197,9 @@ namespace XNA_project3
                 effect.FogEnd = stage.FogEnd;
                 effect.FogEnabled = true;
             }
-            else effect.FogEnabled = false;
+            else 
+                effect.FogEnabled = false;
+            
             effect.DirectionalLight0.DiffuseColor = stage.DiffuseLight;
             effect.AmbientLightColor = stage.AmbientLight;
             effect.DirectionalLight0.Direction = stage.LightDirection;
@@ -241,6 +207,7 @@ namespace XNA_project3
             effect.View = stage.View;
             effect.Projection = stage.Projection;
             effect.World = Matrix.Identity;
+            
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();

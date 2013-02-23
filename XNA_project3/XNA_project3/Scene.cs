@@ -62,9 +62,9 @@ namespace XNA_project3
             base.LoadContent();  // create the Scene entities -- Inspector.
 
             // create a temple
-            Model3D m3d = new Model3D(this, "temple", "templeV3");
+            Model3D m3d = new Model3D(this, "temple", "castle");
             m3d.IsCollidable = true;  // must be set before addObject(...) and Model3D doesn't set it
-            m3d.addObject(new Vector3(340 * spacing, terrain.surfaceHeight(340, 340), 340 * spacing), new Vector3(0, 1, 0), 0.79f);
+            m3d.addObject(new Vector3(440 * spacing, terrain.surfaceHeight(440, 417), 417 * spacing), new Vector3(0, 1, 0), 0.0f);
             Components.Add(m3d);
 
             // create walls for obstacle avoidance or path finding algorithms
