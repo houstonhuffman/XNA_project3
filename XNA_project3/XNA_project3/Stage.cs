@@ -246,8 +246,10 @@ namespace XNA_project3
 
         public bool isCollidable(Object3D obj3d)
         {
-            if (collidable.Contains(obj3d)) return true;
-            else return false;
+            if (collidable.Contains(obj3d)) 
+                return true;
+            else 
+                return false;
         }
 
         /// <summary>
@@ -321,8 +323,10 @@ namespace XNA_project3
 
         public void setBlendingState(bool state)
         {
-            if (state) display.BlendState = blending;
-            else display.BlendState = notBlending;
+            if (state) 
+                display.BlendState = blending;
+            else 
+                display.BlendState = notBlending;
         }
 
         // Overridden Game class methods. 
@@ -376,7 +380,8 @@ namespace XNA_project3
             inspector.setInfo(3, "Arrow keys move the player in, out, left, or right.  'R' resets player to initial orientation.");
             inspector.setInfo(4, "Stage toggles:  'B' bounding spheres, 'C' cameras, 'F' fog, 'T' updates, 'Y' yon");
             // initialize empty info strings
-            for (int i = 5; i < 20; i++) inspector.setInfo(i, "  ");
+            for (int i = 5; i < 20; i++) 
+                inspector.setInfo(i, "  ");
             inspector.setInfo(5, "matrics info pane, initially empty");
             inspector.setInfo(10, "first info pane, initially empty");
             inspector.setInfo(15, "second info pane, initially empty");

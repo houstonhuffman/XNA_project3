@@ -61,9 +61,7 @@ namespace XNA_project3
         /// <param name="radians"></param>
         /// <param name="meshFile"></param>
         /// </summary>
-        public Agent(Stage stage, string label, Vector3 position, Vector3 orientAxis,
-           float radians, string meshFile)
-            : base(stage, label, meshFile)
+        public Agent(Stage stage, string label, Vector3 position, Vector3 orientAxis, float radians, string meshFile) : base(stage, label, meshFile)
         {
             addObject(position, orientAxis, radians);
             agentObject = instance.First<Object3D>();
