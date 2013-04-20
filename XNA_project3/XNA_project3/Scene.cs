@@ -46,6 +46,8 @@ namespace XNA_project3
     /// </summary>
     public class Scene : Stage
     {
+       
+
         public Scene() { }
 
         // Overridden Game class methods. 
@@ -75,28 +77,7 @@ namespace XNA_project3
             //Pack pack = new Pack(this, "dog", "dogV3");
             //Components.Add(pack);
             Random random = new Random();
-            //for (int x = -9; x < 10; x += 6)
-            //    for (int z = -3; z < 4; z += 6)
-            //    {
-            //        float scale = (float)(0.5 + random.NextDouble());
-            //        float xPos = (384 + x) * spacing;
-            //        float zPos = (384 + z) * spacing;
-            //        pack.addObject(
-            //           new Vector3(xPos, terrain.surfaceHeight((int)xPos / spacing, (int)zPos / spacing), zPos),
-            //           new Vector3(0, 1, 0), 0.0f,
-            //           new Vector3(scale, scale, scale));
-            //    }
-            // create some clouds
-            //Cloud cloud = new Cloud(this, "cloud", "cloudV3");
-            //Components.Add(cloud);
-            //// add 9 cloud instances
-            //for (int x = range / 4; x < range; x += (range / 4))
-            //    for (int z = range / 4; z < range; z += (range / 4))
-            //        cloud.addObject(
-            //           new Vector3(x * spacing, terrain.surfaceHeight(x, z) + 2000, z * spacing),
-            //           new Vector3(0, 1, 0), 0.0f,
-            //           new Vector3(random.Next(3) + 1, random.Next(3) + 1, random.Next(3) + 1));
-            // Set initial camera and projection matrix
+          
             nextCamera();  // select the first camera
         }
 
