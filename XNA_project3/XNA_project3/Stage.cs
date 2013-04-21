@@ -27,6 +27,7 @@ using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
+using Microsoft.Xna.Framework.Net;
 
 
 namespace XNA_project3
@@ -57,27 +58,32 @@ namespace XNA_project3
         protected const int range = 512;
         protected const int spacing = 150;  // x and z spaces between vertices in the terrain
         protected const int terrainSize = range * spacing;
+        
         // Graphics device
         protected GraphicsDeviceManager graphics;
         protected GraphicsDevice display;    // graphics context
         protected BasicEffect effect;        // default effects (shaders)
         protected SpriteBatch spriteBatch;   // for Trace's displayStrings
         protected BlendState blending, notBlending;
+       
         // stage Models
         protected Model boundingSphere3D;    // a  bounding sphere model
         protected Model wayPoint3D;          // a way point marker -- for paths.
         protected bool drawBoundingSpheres = false;
         protected bool fog = false;
         protected bool fixedStepRendering = true;     // 60 updates / second
+      
         // Viewports and matrix for split screen display w/ Inspector.cs
         protected Viewport defaultViewport;
         protected Viewport inspectorViewport, sceneViewport;     // top and bottom "windows"
         protected Matrix sceneProjection, inspectorProjection;
+       
         // variables required for use with Inspector
         protected const int InfoPaneSize = 5;   // number of lines / info display pane
         protected const int InfoDisplayStrings = 20;  // number of total display strings
         protected Inspector inspector;
         protected SpriteFont inspectorFont;
+       
         // Projection values
         protected Matrix projection;
         protected float fov = (float)Math.PI / 4;
@@ -85,23 +91,37 @@ namespace XNA_project3
         protected float fogStart = 4000;
         protected float fogEnd = 10000;
         protected bool yonFlag = true;
+        
         // User event state
         protected GamePadState oldGamePadState;
+        protected GamePadState currentGamePadState;
         protected KeyboardState oldKeyboardState;
+        protected KeyboardState currentKeyboardState;
+       
         // Lights
         protected Vector3 lightDirection, ambientColor, diffuseColor;
+        
         // Cameras
         protected List<Camera> camera = new List<Camera>();  // collection of cameras
         protected Camera currentCamera, topDownCamera;
         protected int cameraIndex = 0;
+        
         // Required entities -- all AGXNASK programs have a Player and Terrain
         protected Player player = null;
         protected NPAgent npAgent = null;
         protected Terrain terrain = null;
         protected List<Object3D> collidable = null;
+        
         // Screen display information variables
         protected double fpsSecond;
         protected int draws, updates;
+
+        protected NetworkSession networkSession;
+        protected AvailableNetworkSessionCollection availableSessions;
+        int selectedSessionIndex;
+        PacketReader packetReader = new PacketReader();
+        PacketWriter packetWriter = new PacketWriter();
+
 
         public Stage() : base()
         {
@@ -116,6 +136,9 @@ namespace XNA_project3
             // information display variables
             fpsSecond = 0.0;
             draws = updates = 0;
+
+            Components.Add(new GamerServicesComponent(this));
+            SignedInGamer.SignedIn += new EventHandler<SignedInEventArgs>(SignedInGamer_SignedIn);
         }
 
         // Properties
@@ -387,29 +410,24 @@ namespace XNA_project3
             blending.ColorBlendFunction = BlendFunction.Add;
             notBlending = new BlendState();
             notBlending = display.BlendState;
+            
             // Create and add stage components
-            // You must have a TopDownCamera, BoundingSphere3D, Terrain, and Agent in your stage!
-            // Place objects at a position, provide rotation axis and rotation radians.
-            // All location vectors are specified relative to the center of the stage.
             // Create a top-down "Whole stage" camera view, make it first camera in collection.
             topDownCamera = new Camera(this, Camera.CameraEnum.TopDownCamera);
             camera.Add(topDownCamera);
             boundingSphere3D = Content.Load<Model>("boundingSphereV3");
             wayPoint3D = Content.Load<Model>("100x50x100Marker"); //treasure_chest100x50x100Marker
+            
             // Create required entities:  
             collidable = new List<Object3D>();
-            terrain = new Terrain(this, "terrain", "heightTexture", "colorTexture");
+            terrain = new Terrain(this, "terrain", "heightTexture1", "colorTexture1");
             Components.Add(terrain);
             // Load Avatar mesh objects, Avatar meshes do not have textures
+
             player = new Player(this, "Chaser",
                new Vector3(510 * spacing, terrain.surfaceHeight(510, 507), 507 * spacing),
                new Vector3(0, 1, 0), 0.80f, "redAvatarV3");  // face looking diagonally across stage
             Components.Add(player);
-            //npAgent = new NPAgent(this, "Evader",
-            //   new Vector3(400 * spacing, terrain.surfaceHeight(400, 400), 400 * spacing),
-            //   new Vector3(0, 1, 0), 0.0f, "magentaAvatarV3");  // facing +Z
-            //Components.Add(npAgent);
-            // marker = ContentLoad<Model>("markerV3");
         }
 
         /// <summary>
@@ -432,79 +450,52 @@ namespace XNA_project3
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            // set info pane values
-            fpsSecond += gameTime.ElapsedGameTime.TotalSeconds;
-            updates++;
-            TimeSpan ts = gameTime.TotalGameTime;
-            if (fpsSecond >= 1.0)
+            if (!Guide.IsVisible)
             {
-                inspector.setInfo(10,
-                   String.Format("{0} camera    Game time {1:D2}::{2:D2}::{3:D2}    {4:D} Updates/Seconds {5:D} Draws/Seconds",
-                      currentCamera.Name, ts.Hours, ts.Minutes, ts.Seconds, updates.ToString(), draws.ToString()));
-                draws = updates = 0;
-                fpsSecond = 0.0;
-                inspector.setInfo(11,
-                   string.Format("Player:   Location ({0,5:f0},{1,3:f0},{2,5:f0})  Looking at ({3,5:f2},{4,5:f2},{5,5:f2})",
-                   player.AgentObject.Translation.X/150, player.AgentObject.Translation.Y, player.AgentObject.Translation.Z/150,
-                   player.AgentObject.Forward.X, player.AgentObject.Forward.Y, player.AgentObject.Forward.Z));
-                //inspector.setInfo(12,
-                //   string.Format("npAgent:  Location ({0,5:f0},{1,3:f0},{2,5:f0})  Looking at ({3,5:f2},{4,5:f2},{5,5:f2})",
-                //   npAgent.AgentObject.Translation.X, npAgent.AgentObject.Translation.Y, npAgent.AgentObject.Translation.Z,
-                //   npAgent.AgentObject.Forward.X, npAgent.AgentObject.Forward.Y, npAgent.AgentObject.Forward.Z));
-               // inspector.setMatrices("player", "npAgent", player.AgentObject.Orientation, npAgent.AgentObject.Orientation);
-            }
-            // Process user keyboard and gamepad events that relate to the render 
-            // state of the the stage
-            GamePadState gamePadState = GamePad.GetState(PlayerIndex.One);
-            if (gamePadState.IsConnected)
-            {
-                if (gamePadState.Buttons.X == ButtonState.Pressed) Exit();
-                else if (gamePadState.Buttons.A == ButtonState.Pressed &&
-                      oldGamePadState.Buttons.A != ButtonState.Pressed) nextCamera();
-                else if (gamePadState.Buttons.B == ButtonState.Pressed &&
-                      oldGamePadState.Buttons.B != ButtonState.Pressed) Fog = !Fog;
-                else if (gamePadState.Buttons.Y == ButtonState.Pressed &&
-                      oldGamePadState.Buttons.Y != ButtonState.Pressed)
-                    FixedStepRendering = !FixedStepRendering;
-                oldGamePadState = gamePadState;
-            }
-            else
-            { // no gamepad assume use of keyboard
-                KeyboardState keyboardState = Keyboard.GetState();
-                if (keyboardState.IsKeyDown(Keys.Escape)) Exit();
-                // key event handlers needed for Inspector
-                // set help display on
+                //// set info pane values
+                //fpsSecond += gameTime.ElapsedGameTime.TotalSeconds;
+                //updates++;
+                //TimeSpan ts = gameTime.TotalGameTime;
+                //if (fpsSecond >= 1.0)
+                //{
+                //    inspector.setInfo(10,
+                //       String.Format("{0} camera    Game time {1:D2}::{2:D2}::{3:D2}    {4:D} Updates/Seconds {5:D} Draws/Seconds",
+                //          currentCamera.Name, ts.Hours, ts.Minutes, ts.Seconds, updates.ToString(), draws.ToString()));
+                //    draws = updates = 0;
+                //    fpsSecond = 0.0;
+                //    inspector.setInfo(11,
+                //       string.Format("Player:   Location ({0,5:f0},{1,3:f0},{2,5:f0})  Looking at ({3,5:f2},{4,5:f2},{5,5:f2})",
+                //       player.AgentObject.Translation.X / 150, player.AgentObject.Translation.Y, player.AgentObject.Translation.Z / 150,
+                //       player.AgentObject.Forward.X, player.AgentObject.Forward.Y, player.AgentObject.Forward.Z));
+                //}
 
-                else if (keyboardState.IsKeyDown(Keys.B) && !oldKeyboardState.IsKeyDown(Keys.B))
-                    DrawBoundingSpheres = !DrawBoundingSpheres;
-                else if (keyboardState.IsKeyDown(Keys.C) && !oldKeyboardState.IsKeyDown(Keys.C))
-                    nextCamera();
-                else if (keyboardState.IsKeyDown(Keys.F) && !oldKeyboardState.IsKeyDown(Keys.F))
-                    Fog = !Fog;
-                else if (keyboardState.IsKeyDown(Keys.H) && !oldKeyboardState.IsKeyDown(Keys.H))
+                foreach (SignedInGamer signedIn in SignedInGamer.SignedInGamers)
                 {
-                    inspector.ShowHelp = !inspector.ShowHelp;
-                    inspector.ShowMatrices = false;
+                    Player player = signedIn.Tag as Player;
+                    oldKeyboardState = player.OldKeyboardState;
+                    currentKeyboardState = Keyboard.GetState(signedIn.PlayerIndex);
+
+                    if (networkSession != null)
+                    {
+                        //lobby goes here
+                    }
+                    else if (availableSessions != null)
+                    {
+                        //available session inputs here
+                    }
+                    else
+                    {
+                        //title screen
+                    }
+
+                    player.OldKeyboardState = currentKeyboardState;
+                    
+                    //HandlePlayerInput(player, gameTime);
                 }
-                // set info display on
-                else if (keyboardState.IsKeyDown(Keys.I) && !oldKeyboardState.IsKeyDown(Keys.I))
-                    inspector.showInfo();
-                // set miscellaneous display on
-                else if (keyboardState.IsKeyDown(Keys.M) && !oldKeyboardState.IsKeyDown(Keys.M))
-                {
-                    inspector.ShowMatrices = !inspector.ShowMatrices;
-                    inspector.ShowHelp = false;
-                }
-                else if (keyboardState.IsKeyDown(Keys.T) && !oldKeyboardState.IsKeyDown(Keys.T))
-                    FixedStepRendering = !FixedStepRendering;
-                else if (keyboardState.IsKeyDown(Keys.Y) && !oldKeyboardState.IsKeyDown(Keys.Y))
-                    YonFlag = !YonFlag;  // toggle Yon clipping value.
-                oldKeyboardState = keyboardState;    // Update saved state.
+                base.Update(gameTime);  // update all GameComponents and DrawableGameComponents
+                currentCamera.updateViewMatrix();
             }
-            base.Update(gameTime);  // update all GameComponents and DrawableGameComponents
-            currentCamera.updateViewMatrix();
         }
-
         /// <summary>
         /// Draws information in the display viewport.
         /// Resets the GraphicsDevice's context and makes the sceneViewport active.
@@ -529,6 +520,87 @@ namespace XNA_project3
             display.Viewport = sceneViewport;
             display.RasterizerState = RasterizerState.CullNone;
             base.Draw(gameTime);  // draw all GameComponents and DrawableGameComponents
+        }
+
+        protected void SignedInGamer_SignedIn(object sender, SignedInEventArgs e)
+        {
+            e.Gamer.Tag = new Player(this, "Chaser",
+               new Vector3(510 * spacing, terrain.surfaceHeight(510, 507), 507 * spacing),
+               new Vector3(0, 1, 0), 0.80f, "redAvatarV3");
+        }
+
+        private void HandlePlayerInput(Player player, GameTime gameTime)
+        {
+            // Process user keyboard and gamepad events that relate to the render 
+            // state of the the stage
+            currentGamePadState = GamePad.GetState(PlayerIndex.One);
+            if (currentGamePadState.IsConnected)
+            {
+                if (IsButtonPressed(Buttons.A))
+                    nextCamera();
+                else if (IsButtonPressed(Buttons.B))
+                    Fog = !Fog;
+                else if (IsButtonPressed(Buttons.X))
+                    Exit();
+                else if (IsButtonPressed(Buttons.Y))
+                    FixedStepRendering = !FixedStepRendering;
+
+                oldGamePadState = currentGamePadState;
+            }
+            else
+            {
+                currentKeyboardState = Keyboard.GetState();
+
+                if (IsKeyPressed(Keys.Escape))
+                    Exit();
+                else if (IsKeyPressed(Keys.B))
+                    DrawBoundingSpheres = !DrawBoundingSpheres;
+                else if (IsKeyPressed(Keys.C))
+                    nextCamera();
+                else if (IsKeyPressed(Keys.F))
+                    Fog = !Fog;
+                else if (IsKeyPressed(Keys.H))
+                {
+                    inspector.ShowHelp = !inspector.ShowHelp;
+                    inspector.ShowMatrices = false;
+                }
+                else if (IsKeyPressed(Keys.I))
+                    inspector.showInfo();
+                else if (IsKeyPressed(Keys.M))
+                {
+                    inspector.ShowMatrices = !inspector.ShowMatrices;
+                    inspector.ShowHelp = false;
+                }
+                else if (IsKeyPressed(Keys.T))
+                    FixedStepRendering = !FixedStepRendering;
+                else if (IsKeyPressed(Keys.Y))
+                    YonFlag = !YonFlag;
+
+                oldKeyboardState = currentKeyboardState;    // Update saved state.
+
+            }
+        }
+
+        private Boolean IsButtonPressed(Buttons b)
+        {
+            switch (b)
+            {
+                case Buttons.A:
+                    return (currentGamePadState.Buttons.A == ButtonState.Pressed && oldGamePadState.Buttons.A != ButtonState.Pressed);
+                case Buttons.B:
+                    return (currentGamePadState.Buttons.B == ButtonState.Pressed && oldGamePadState.Buttons.B != ButtonState.Pressed);
+                case Buttons.Y:
+                    return (currentGamePadState.Buttons.Y == ButtonState.Pressed && oldGamePadState.Buttons.Y != ButtonState.Pressed);
+                case Buttons.X:
+                    return (currentGamePadState.Buttons.X == ButtonState.Pressed);
+            }
+            
+            return false;
+        }
+
+        private Boolean IsKeyPressed(Keys key)
+        {
+            return currentKeyboardState.IsKeyDown(key) && !oldKeyboardState.IsKeyDown(key);
         }
 
     }

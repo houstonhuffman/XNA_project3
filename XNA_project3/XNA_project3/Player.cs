@@ -48,6 +48,12 @@ namespace XNA_project3
         private float angle;
         private Matrix initialOrientation;
 
+        public KeyboardState OldKeyboardState
+        {
+            get { return oldKeyboardState; }
+            set { oldKeyboardState = value; }
+        }
+
         public Player(Stage theStage, string label, Vector3 pos, Vector3 orientAxis, float radians, string meshFile)
             : base(theStage, label, pos, orientAxis, radians, meshFile)
         {  // change names for on-screen display of current camera
